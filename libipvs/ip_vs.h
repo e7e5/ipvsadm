@@ -195,6 +195,22 @@ struct ip_vs_stats_user
 	__u32			outbps;		/* current out byte rate */
 };
 
+/*
+ *	IPVS statistics object (for user space), 64-bit
+ */
+struct ip_vs_stats64 {
+	__u64			conns;		/* connections scheduled */
+	__u64			inpkts;		/* incoming packets */
+	__u64			outpkts;	/* outgoing packets */
+	__u64			inbytes;	/* incoming bytes */
+	__u64			outbytes;	/* outgoing bytes */
+
+	__u64			cps;		/* current connection rate */
+	__u64			inpps;		/* current in packet rate */
+	__u64			outpps;		/* current out packet rate */
+	__u64			inbps;		/* current in byte rate */
+	__u64			outbps;		/* current out byte rate */
+};
 
 /* The argument to IP_VS_SO_GET_INFO */
 struct ip_vs_getinfo {
@@ -253,6 +269,8 @@ struct ip_vs_service_entry {
 	union nf_inet_addr	addr;
 	char			pe_name[IP_VS_PENAME_MAXLEN];
 
+	/* statistics, 64-bit */
+	struct ip_vs_stats64	stats64;
 };
 
 struct ip_vs_dest_entry_kern {
@@ -289,6 +307,9 @@ struct ip_vs_dest_entry {
 	struct ip_vs_stats_user stats;
 	u_int16_t		af;
 	union nf_inet_addr	addr;
+
+	/* statistics, 64-bit */
+	struct ip_vs_stats64	stats64;
 };
 
 /* The argument to IP_VS_SO_GET_DESTS */
@@ -444,6 +465,8 @@ enum {
 
 	IPVS_SVC_ATTR_PE_NAME,		/* name of scheduler */
 
+	IPVS_SVC_ATTR_STATS64,		/* nested attribute for service stats */
+
 	__IPVS_SVC_ATTR_MAX,
 };
 
@@ -473,6 +496,8 @@ enum {
 
 	IPVS_DEST_ATTR_ADDR_FAMILY,	/* Address family of address */
 
+	IPVS_DEST_ATTR_STATS64,		/* nested attribute for dest stats */
+
 	__IPVS_DEST_ATTR_MAX,
 };
 
@@ -496,7 +521,8 @@ enum {
 /*
  * Attributes used to describe service or destination entry statistics
  *
- * Used inside nested attributes IPVS_SVC_ATTR_STATS and IPVS_DEST_ATTR_STATS
+ * Used inside nested attributes IPVS_SVC_ATTR_STATS, IPVS_DEST_ATTR_STATS,
+ * IPVS_SVC_ATTR_STATS64 and IPVS_DEST_ATTR_STATS64.
  */
 enum {
 	IPVS_STATS_ATTR_UNSPEC = 0,

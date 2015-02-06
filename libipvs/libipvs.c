@@ -150,6 +150,21 @@ int ipvs_init(void)
 	return 0;
 }
 
+static void copy_stats_from_kern(struct ip_vs_stats64 *d,
+				 struct ip_vs_stats_user *s)
+{
+	d->conns = s->conns;
+	d->inpkts = s->inpkts;
+	d->outpkts = s->outpkts;
+	d->inbytes = s->inbytes;
+	d->outbytes = s->outbytes;
+	d->cps = s->cps;
+	d->inpps = s->inpps;
+	d->outpps = s->outpps;
+	d->inbps = s->inbps;
+	d->outbps = s->outbps;
+}
+
 #ifdef LIBIPVS_USE_NL
 static int ipvs_getinfo_parse_cb(struct nl_msg *msg, void *arg)
 {
@@ -545,7 +560,7 @@ nla_put_failure:
 }
 
 #ifdef LIBIPVS_USE_NL
-static int ipvs_parse_stats(struct ip_vs_stats_user *stats, struct nlattr *nla)
+static int ipvs_parse_stats(struct ip_vs_stats64 *stats, struct nlattr *nla)
 {
 	struct nlattr *attrs[IPVS_STATS_ATTR_MAX + 1];
 
@@ -577,6 +592,40 @@ static int ipvs_parse_stats(struct ip_vs_stats_user *stats, struct nlattr *nla)
 
 	return 0;
 
+}
+
+static int ipvs_parse_stats64(struct ip_vs_stats64 *stats, struct nlattr *nla)
+{
+	struct nlattr *attrs[IPVS_STATS_ATTR_MAX + 1];
+
+	if (nla_parse_nested(attrs, IPVS_STATS_ATTR_MAX, nla,
+			     ipvs_stats_policy))
+		return -1;
+
+	if (!(attrs[IPVS_STATS_ATTR_CONNS] &&
+	      attrs[IPVS_STATS_ATTR_INPKTS] &&
+	      attrs[IPVS_STATS_ATTR_OUTPKTS] &&
+	      attrs[IPVS_STATS_ATTR_INBYTES] &&
+	      attrs[IPVS_STATS_ATTR_OUTBYTES] &&
+	      attrs[IPVS_STATS_ATTR_CPS] &&
+	      attrs[IPVS_STATS_ATTR_INPPS] &&
+	      attrs[IPVS_STATS_ATTR_OUTPPS] &&
+	      attrs[IPVS_STATS_ATTR_INBPS] &&
+	      attrs[IPVS_STATS_ATTR_OUTBPS]))
+		return -1;
+
+	stats->conns = nla_get_u64(attrs[IPVS_STATS_ATTR_CONNS]);
+	stats->inpkts = nla_get_u64(attrs[IPVS_STATS_ATTR_INPKTS]);
+	stats->outpkts = nla_get_u64(attrs[IPVS_STATS_ATTR_OUTPKTS]);
+	stats->inbytes = nla_get_u64(attrs[IPVS_STATS_ATTR_INBYTES]);
+	stats->outbytes = nla_get_u64(attrs[IPVS_STATS_ATTR_OUTBYTES]);
+	stats->cps = nla_get_u64(attrs[IPVS_STATS_ATTR_CPS]);
+	stats->inpps = nla_get_u64(attrs[IPVS_STATS_ATTR_INPPS]);
+	stats->outpps = nla_get_u64(attrs[IPVS_STATS_ATTR_OUTPPS]);
+	stats->inbps = nla_get_u64(attrs[IPVS_STATS_ATTR_INBPS]);
+	stats->outbps = nla_get_u64(attrs[IPVS_STATS_ATTR_OUTBPS]);
+
+	return 0;
 }
 
 static int ipvs_services_parse_cb(struct nl_msg *msg, void *arg)
@@ -636,9 +685,15 @@ static int ipvs_services_parse_cb(struct nl_msg *msg, void *arg)
 	nla_memcpy(&flags, svc_attrs[IPVS_SVC_ATTR_FLAGS], sizeof(flags));
 	get->entrytable[i].flags = flags.flags & flags.mask;
 
-	if (ipvs_parse_stats(&(get->entrytable[i].stats),
-			     svc_attrs[IPVS_SVC_ATTR_STATS]) != 0)
-		return -1;
+	if (svc_attrs[IPVS_SVC_ATTR_STATS64]) {
+		if (ipvs_parse_stats64(&get->entrytable[i].stats64,
+				       svc_attrs[IPVS_SVC_ATTR_STATS64]) != 0)
+			return -1;
+	} else if (svc_attrs[IPVS_SVC_ATTR_STATS]) {
+		if (ipvs_parse_stats(&get->entrytable[i].stats64,
+				     svc_attrs[IPVS_SVC_ATTR_STATS]) != 0)
+			return -1;
+	}
 
 	get->entrytable[i].num_dests = 0;
 
@@ -702,6 +757,8 @@ struct ip_vs_get_services *ipvs_get_services(void)
 		       sizeof(struct ip_vs_service_entry_kern));
 		get->entrytable[i].af = AF_INET;
 		get->entrytable[i].addr.ip = get->entrytable[i].__addr_v4;
+		copy_stats_from_kern(&get->entrytable[i].stats64,
+				     &get->entrytable[i].stats);
 	}
 	free(getk);
 	return get;
@@ -796,9 +853,15 @@ static int ipvs_dests_parse_cb(struct nl_msg *msg, void *arg)
 	else
 		d->entrytable[i].af = d->af;
 
-	if (ipvs_parse_stats(&(d->entrytable[i].stats),
-			     dest_attrs[IPVS_DEST_ATTR_STATS]) != 0)
-		return -1;
+	if (dest_attrs[IPVS_DEST_ATTR_STATS64]) {
+		if (ipvs_parse_stats(&d->entrytable[i].stats64,
+				     dest_attrs[IPVS_DEST_ATTR_STATS64]) != 0)
+			return -1;
+	} else if (dest_attrs[IPVS_DEST_ATTR_STATS]) {
+		if (ipvs_parse_stats(&d->entrytable[i].stats64,
+				     dest_attrs[IPVS_DEST_ATTR_STATS]) != 0)
+			return -1;
+	}
 
 	i++;
 
@@ -900,6 +963,8 @@ ipvs_nl_dest_failure:
 		       sizeof(struct ip_vs_dest_entry_kern));
 		d->entrytable[i].af = AF_INET;
 		d->entrytable[i].addr.ip = d->entrytable[i].__addr_v4;
+		copy_stats_from_kern(&d->entrytable[i].stats64,
+				     &d->entrytable[i].stats);
 	}
 	free(dk);
 	return d;
@@ -1001,6 +1066,7 @@ ipvs_get_service_err2:
 	svc->af = AF_INET;
 	svc->addr.ip = svc->__addr_v4;
 	svc->pe_name[0] = '\0';
+	copy_stats_from_kern(&svc->stats64, &svc->stats);
 	return svc;
 out_err:
 	free(svc);

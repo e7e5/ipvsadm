@@ -1639,18 +1639,18 @@ print_service_entry(ipvs_service_entry_t *se, unsigned int format)
 		}
 	} else if (format & FMT_STATS) {
 		printf("%-33s", svc_name);
-		print_largenum(se->stats.conns, format);
-		print_largenum(se->stats.inpkts, format);
-		print_largenum(se->stats.outpkts, format);
-		print_largenum(se->stats.inbytes, format);
-		print_largenum(se->stats.outbytes, format);
+		print_largenum(se->stats64.conns, format);
+		print_largenum(se->stats64.inpkts, format);
+		print_largenum(se->stats64.outpkts, format);
+		print_largenum(se->stats64.inbytes, format);
+		print_largenum(se->stats64.outbytes, format);
 	} else if (format & FMT_RATE) {
 		printf("%-33s", svc_name);
-		print_largenum(se->stats.cps, format);
-		print_largenum(se->stats.inpps, format);
-		print_largenum(se->stats.outpps, format);
-		print_largenum(se->stats.inbps, format);
-		print_largenum(se->stats.outbps, format);
+		print_largenum(se->stats64.cps, format);
+		print_largenum(se->stats64.inpps, format);
+		print_largenum(se->stats64.outpps, format);
+		print_largenum(se->stats64.inbps, format);
+		print_largenum(se->stats64.outbps, format);
 	} else {
 		printf("%s %s", svc_name, se->sched_name);
 		if (se->flags & (IP_VS_SVC_F_SCHED1 |
@@ -1700,19 +1700,19 @@ print_service_entry(ipvs_service_entry_t *se, unsigned int format)
 			       fwd_switch(e->conn_flags), e->weight);
 		} else if (format & FMT_STATS) {
 			printf("  -> %-28s", dname);
-			print_largenum(e->stats.conns, format);
-			print_largenum(e->stats.inpkts, format);
-			print_largenum(e->stats.outpkts, format);
-			print_largenum(e->stats.inbytes, format);
-			print_largenum(e->stats.outbytes, format);
+			print_largenum(e->stats64.conns, format);
+			print_largenum(e->stats64.inpkts, format);
+			print_largenum(e->stats64.outpkts, format);
+			print_largenum(e->stats64.inbytes, format);
+			print_largenum(e->stats64.outbytes, format);
 			printf("\n");
 		} else if (format & FMT_RATE) {
-			printf("  -> %-28s %8u %8u %8u", dname,
-			       e->stats.cps,
-			       e->stats.inpps,
-			       e->stats.outpps);
-			print_largenum(e->stats.inbps, format);
-			print_largenum(e->stats.outbps, format);
+			printf("  -> %-28s %8llu %8llu %8llu", dname,
+			       e->stats64.cps,
+			       e->stats64.inpps,
+			       e->stats64.outpps);
+			print_largenum(e->stats64.inbps, format);
+			print_largenum(e->stats64.outbps, format);
 			printf("\n");
 		} else if (format & FMT_THRESHOLDS) {
 			printf("  -> %-28s %-10u %-10u %-10u %-10u\n", dname,
