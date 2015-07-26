@@ -183,7 +183,11 @@ static const char* cmdnames[] = {
 #define OPT_ONEPACKET		0x200000
 #define OPT_PERSISTENCE_ENGINE  0x400000
 #define OPT_SCHED_FLAGS		0x800000
-#define NUMBER_OF_OPT		24
+#define OPT_MCAST_GROUP		0x01000000
+#define OPT_MCAST_PORT		0x02000000
+#define OPT_MCAST_TTL		0x04000000
+#define OPT_SYNC_MAXLEN	0x08000000
+#define NUMBER_OF_OPT		28
 
 static const char* optnames[] = {
 	"numeric",
@@ -210,6 +214,10 @@ static const char* optnames[] = {
 	"ops",
 	"pe",
 	"sched-flags",
+	"mcast-group",
+	"mcast-port",
+	"mcast-ttl",
+	"sync-maxlen",
 };
 
 /*
@@ -222,21 +230,21 @@ static const char* optnames[] = {
  */
 static const char commands_v_options[NUMBER_OF_CMD][NUMBER_OF_OPT] =
 {
-	/*   -n   -c   svc  -s   -p   -M   -r   fwd  -w   -x   -y   -mc  tot  dmn  -st  -rt  thr  -pc  srt  sid  -ex  ops  -pe  -b */
-/*ADD*/     {'x', 'x', '+', ' ', ' ', ' ', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', ' ', ' ', ' '},
-/*EDIT*/    {'x', 'x', '+', ' ', ' ', ' ', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', ' ', ' ', ' '},
-/*DEL*/     {'x', 'x', '+', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x'},
-/*FLUSH*/   {'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x'},
-/*LIST*/    {' ', '1', '1', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', '1', '1', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'x', 'x', 'x'},
-/*ADDSRV*/  {'x', 'x', '+', 'x', 'x', 'x', '+', ' ', ' ', ' ', ' ', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x'},
-/*DELSRV*/  {'x', 'x', '+', 'x', 'x', 'x', '+', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x'},
-/*EDITSRV*/ {'x', 'x', '+', 'x', 'x', 'x', '+', ' ', ' ', ' ', ' ', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x'},
-/*TIMEOUT*/ {'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x'},
-/*STARTD*/  {'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', ' ', 'x', 'x', 'x', 'x', 'x', 'x', 'x', ' ', 'x', 'x', 'x', 'x'},
-/*STOPD*/   {'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', ' ', 'x', 'x', 'x', 'x'},
-/*RESTORE*/ {'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x'},
-/*SAVE*/    {' ', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x'},
-/*ZERO*/    {'x', 'x', ' ', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x'},
+	/*   -n   -c   svc  -s   -p   -M   -r   fwd  -w   -x   -y   -mc  tot  dmn  -st  -rt  thr  -pc  srt  sid  -ex  ops  -pe  -b   grp  port ttl  size */
+/*ADD*/     {'x', 'x', '+', ' ', ' ', ' ', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', ' ', ' ', ' ', 'x', 'x', 'x', 'x'},
+/*EDIT*/    {'x', 'x', '+', ' ', ' ', ' ', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', ' ', ' ', ' ', 'x', 'x', 'x', 'x'},
+/*DEL*/     {'x', 'x', '+', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x'},
+/*FLUSH*/   {'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x'},
+/*LIST*/    {' ', '1', '1', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', '1', '1', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'x', 'x', 'x', 'x', 'x', 'x', 'x'},
+/*ADDSRV*/  {'x', 'x', '+', 'x', 'x', 'x', '+', ' ', ' ', ' ', ' ', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x'},
+/*DELSRV*/  {'x', 'x', '+', 'x', 'x', 'x', '+', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x'},
+/*EDITSRV*/ {'x', 'x', '+', 'x', 'x', 'x', '+', ' ', ' ', ' ', ' ', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x'},
+/*TIMEOUT*/ {'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x'},
+/*STARTD*/  {'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', ' ', 'x', 'x', 'x', 'x', 'x', 'x', 'x', ' ', 'x', 'x', 'x', 'x', ' ', ' ', ' ', ' '},
+/*STOPD*/   {'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', ' ', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x'},
+/*RESTORE*/ {'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x'},
+/*SAVE*/    {' ', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x'},
+/*ZERO*/    {'x', 'x', ' ', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x'},
 };
 
 /* printing format flags */
@@ -288,6 +296,10 @@ enum {
 	TAG_NO_SORT,
 	TAG_PERSISTENCE_ENGINE,
 	TAG_SCTP_SERVICE,
+	TAG_MCAST_GROUP,
+	TAG_MCAST_PORT,
+	TAG_MCAST_TTL,
+	TAG_SYNC_MAXLEN,
 };
 
 /* various parsing helpers & parsing functions */
@@ -475,6 +487,14 @@ parse_options(int argc, char **argv, struct ipvs_command_entry *ce,
 		  NULL, NULL },
 		{ "sched-flags", 'b', POPT_ARG_STRING, &optarg, 'b',
 		  NULL, NULL },
+		{ "mcast-group", '\0', POPT_ARG_STRING, &optarg,
+		  TAG_MCAST_GROUP, NULL, NULL },
+		{ "mcast-port", '\0', POPT_ARG_STRING, &optarg,
+		  TAG_MCAST_PORT, NULL, NULL },
+		{ "mcast-ttl", '\0', POPT_ARG_STRING, &optarg,
+		  TAG_MCAST_TTL, NULL, NULL },
+		{ "sync-maxlen", '\0', POPT_ARG_STRING, &optarg,
+		  TAG_SYNC_MAXLEN, NULL, NULL },
 		{ NULL, 0, 0, NULL, 0, NULL, NULL }
 	};
 
@@ -711,6 +731,47 @@ parse_options(int argc, char **argv, struct ipvs_command_entry *ce,
 			set_option(options, OPT_SCHED_FLAGS);
 			snprintf(sched_flags_arg, sizeof(sched_flags_arg),
 				"%s", optarg);
+			break;
+		case TAG_MCAST_GROUP:
+			set_option(options, OPT_MCAST_GROUP);
+			if (strchr(optarg, ':')) {
+				if (inet_pton(AF_INET6, optarg,
+					      &ce->daemon.mcast_group) <= 0 ||
+				    !IN6_IS_ADDR_MULTICAST(
+				     &ce->daemon.mcast_group.in6))
+					fail(2, "invalid IPv6 mcast-group `%s'",
+					     optarg);
+				ce->daemon.mcast_af = AF_INET6;
+			} else {
+				if (inet_pton(AF_INET, optarg,
+					      &ce->daemon.mcast_group) <= 0 ||
+				    !IN_MULTICAST(ntohl(
+						  ce->daemon.mcast_group.ip)))
+					fail(2, "invalid IPv4 mcast-group `%s'",
+					     optarg);
+				ce->daemon.mcast_af = AF_INET;
+			}
+			break;
+		case TAG_MCAST_PORT:
+			set_option(options, OPT_MCAST_PORT);
+			parse = string_to_number(optarg, 1, 65535);
+			if (parse == -1)
+				fail(2, "illegal mcast-port specified");
+			ce->daemon.mcast_port = parse;
+			break;
+		case TAG_MCAST_TTL:
+			set_option(options, OPT_MCAST_TTL);
+			parse = string_to_number(optarg, 1, 255);
+			if (parse == -1)
+				fail(2, "illegal mcast-ttl specified");
+			ce->daemon.mcast_ttl = parse;
+			break;
+		case TAG_SYNC_MAXLEN:
+			set_option(options, OPT_SYNC_MAXLEN);
+			parse = string_to_number(optarg, 1, 65535 - 20 - 8);
+			if (parse == -1)
+				fail(2, "illegal sync-maxlen specified");
+			ce->daemon.sync_maxlen = parse;
 			break;
 		default:
 			fail(2, "invalid option `%s'",
@@ -1182,8 +1243,8 @@ static void usage_exit(const char *program, const int exit_status)
 		"  %s -L|l [virtual-service] [options]\n"
 		"  %s -Z [virtual-service]\n"
 		"  %s --set tcp tcpfin udp\n"
-		"  %s --start-daemon state [--mcast-interface interface] [--syncid sid]\n"
-		"  %s --stop-daemon state\n"
+		"  %s --start-daemon {master|backup} [daemon-options]\n"
+		"  %s --stop-daemon {master|backup}\n"
 		"  %s -h\n\n",
 		program, program, program,
 		program, program, program, program, program,
@@ -1233,8 +1294,6 @@ static void usage_exit(const char *program, const int exit_status)
 		"  --weight       -w weight            capacity of real server\n"
 		"  --u-threshold  -x uthreshold        upper threshold of connections\n"
 		"  --l-threshold  -y lthreshold        lower threshold of connections\n"
-		"  --mcast-interface interface         multicast interface for connection sync\n"
-		"  --syncid sid                        syncid for connection sync (default=255)\n"
 		"  --connection   -c                   output of current IPVS connections\n"
 		"  --timeout                           output of timeout (tcp tcpfin udp)\n"
 		"  --daemon                            output of daemon information\n"
@@ -1249,6 +1308,16 @@ static void usage_exit(const char *program, const int exit_status)
 		"  --numeric      -n                   numeric output of addresses and ports\n"
 		"  --sched-flags  -b flags             scheduler flags (comma-separated)\n",
 		DEF_SCHED);
+
+	fprintf(stream,
+		"Daemon Options:\n"
+		"  --syncid sid                        syncid for connection sync (default=255)\n"
+		"  --sync-maxlen length                Max sync message length (default=1472)\n"
+		"  --mcast-interface interface         multicast interface for connection sync\n"
+		"  --mcast-group address               IPv4/IPv6 group (default=224.0.0.81)\n"
+		"  --mcast-port port                   UDP port (default=8848)\n"
+		"  --mcast-ttl ttl                     Multicast TTL (default=1)\n"
+		);
 
 	exit(exit_status);
 }
@@ -1793,12 +1862,30 @@ static void list_daemon(void)
 		exit(1);
 
 	for (i = 0; i < 2; i++) {
+		char *type;
+
 		if (u[i].state & IP_VS_STATE_MASTER)
-			printf("master sync daemon (mcast=%s, syncid=%d)\n",
-			       u[i].mcast_ifn, u[i].syncid);
-		if (u[i].state & IP_VS_STATE_BACKUP)
-			printf("backup sync daemon (mcast=%s, syncid=%d)\n",
-			       u[i].mcast_ifn, u[i].syncid);
+			type = "master";
+		else if (u[i].state & IP_VS_STATE_BACKUP)
+			type = "backup";
+		else
+			continue;
+		printf("%s sync daemon (mcast=%s, syncid=%d",
+		       type, u[i].mcast_ifn, u[i].syncid);
+		if (u[i].sync_maxlen)
+			printf(", maxlen=%u", u[i].sync_maxlen);
+		if (u[i].mcast_af != AF_UNSPEC) {
+			char addr[INET6_ADDRSTRLEN];
+
+			if (inet_ntop(u[i].mcast_af, &u[i].mcast_group,
+				      addr, sizeof(addr)))
+				printf(", group=%s", addr);
+		}
+		if (u[i].mcast_port)
+			printf(", port=%u", u[i].mcast_port);
+		if (u[i].mcast_ttl)
+			printf(", ttl=%u", u[i].mcast_ttl);
+		printf(")\n");
 	}
 	free(u);
 }

@@ -369,6 +369,17 @@ struct ip_vs_timeout_user {
 
 
 /* The argument to IP_VS_SO_GET_DAEMON */
+struct ip_vs_daemon_kern {
+	/* sync daemon state (master/backup) */
+	int			state;
+
+	/* multicast interface name */
+	char			mcast_ifn[IP_VS_IFNAME_MAXLEN];
+
+	/* SyncID we belong to */
+	int			syncid;
+};
+
 struct ip_vs_daemon_user {
 	/* sync daemon state (master/backup) */
 	int			state;
@@ -378,6 +389,21 @@ struct ip_vs_daemon_user {
 
 	/* SyncID we belong to */
 	int			syncid;
+
+	/* UDP Payload Size */
+	int			sync_maxlen;
+
+	/* Multicast Port (base) */
+	u_int16_t		mcast_port;
+
+	/* Multicast TTL */
+	u_int16_t		mcast_ttl;
+
+	/* Multicast Address Family */
+	u_int16_t		mcast_af;
+
+	/* Multicast Address */
+	union nf_inet_addr	mcast_group;
 };
 
 
@@ -513,6 +539,11 @@ enum {
 	IPVS_DAEMON_ATTR_STATE,		/* sync daemon state (master/backup) */
 	IPVS_DAEMON_ATTR_MCAST_IFN,	/* multicast interface name */
 	IPVS_DAEMON_ATTR_SYNC_ID,	/* SyncID we belong to */
+	IPVS_DAEMON_ATTR_SYNC_MAXLEN,	/* UDP Payload Size */
+	IPVS_DAEMON_ATTR_MCAST_GROUP,	/* IPv4 Multicast Address */
+	IPVS_DAEMON_ATTR_MCAST_GROUP6,	/* IPv6 Multicast Address */
+	IPVS_DAEMON_ATTR_MCAST_PORT,	/* Multicast Port (base) */
+	IPVS_DAEMON_ATTR_MCAST_TTL,	/* Multicast TTL */
 	__IPVS_DAEMON_ATTR_MAX,
 };
 
